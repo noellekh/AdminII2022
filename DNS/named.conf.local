@@ -1,0 +1,4 @@
+zone "nozakh.com" {
+    type master;
+    file "/etc/bind/zones/db.nozakh.com";
+};
