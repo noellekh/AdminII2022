@@ -1,0 +1,247 @@
+
+# /etc/postfix/main.cf
+
+# Fichier de configuration de postfix
+################################################
+# 
+# Le format général est une paire parametre = valeur par ligne.
+# Les lignes débutant par un expace sont considéré comme étant la suite de la ligne précédente.
+# Une valeur peut faire référence à une autre valeur $parametre ou ${parametre}
+
+
+# INFORMATION SUR LES CHEMINS LOCAUX
+################################################
+
+# Liste des répertoires courament utlisé par Postfix:
+#
+queue_directory = /var/spool/postfix
+program_directory = /usr/libexec/postfix
+command_directory = /usr/sbin
+daemon_directory = /usr/lib/postfix
+mail_spool_directory = /var/spool/mail
+
+
+# PROPRIETAIRE DES PROCESSUS ET FILE D'ATTENTE
+################################################
+
+# Propriétaire de la file d'attente et de la plupart des processus de Postfix.
+# Ne pas changer
+#
+mail_owner = postfix
+
+# Privilèges par defaut utilisés lors de l'absence d'un utilisateur récepteur valide.
+# Ne pas changer
+default_privs = nobody
+
+
+# DEFINITION DES NOMS DE MACHINES ET DE DOMAINE INTERNET 
+################################################
+
+# Ces parametres sont utilisé par de nombreux autres paramètres.
+
+# "myhostname" définie le nom Internet (fqdn) de la machine.
+# Par defaut, c'est le nom retourné par gethostname() qui est utilisé.
+#
+myhostname = mail.domaine-fantaisie.fr 
+
+# mydomain spécifie le nom du domaine local. 
+# La valeur par defaut est $myhostname moins le premier terme (host)
+#
+# mydomain = domaine-fantaisie.fr
+
+
+# ENVOIE DE MESSAGES
+################################################
+
+# myorigine définit l'adresse d'émission des messages postés localement.
+# La valeur par defaut est $myhostname.
+#
+myorigin = $mydomain
+
+#masquerade_domains = $mydomain
+
+
+# RECEPTION DE MESSAGES
+################################################
+
+# "inet_interfaces" définit quel sont les addresses de la machine qui sont suceptibles de recevoir du courrier.
+# Les messages ayant pour destination une adresse IP définie ici, sont considéré comme locaux.
+# Par defaut Postfix accepte les messages sur toutes les interfaces.
+#
+#inet_interfaces = all
+#inet_interfaces = $myhostname
+#inet_interfaces = 10.0.0.1
+
+# "mydestination" définit une liste de domaine ou nom de machine pour laquelle la machine 
+# se considèrera comme étant la destination finale des messages.
+#
+# La valaur par defaut est $myhostname et localhost.$mydomain.
+# Si la machine est le serveur de mail du domaine, il faut alors ajouter 
+# le nom du domaine entier :
+# mydestination = $myhostname, localhost.$mydomain $mydomain
+#
+mydestination = $mydomain, $myhostname, localhost.$mydomain, mail.$mydomain
+
+
+# INTERNET VERSUS INTRANET
+################################################
+
+
+# "relayhost" définit ici le nom du serveur de mail du fournisseur d'accès,
+# vers lequel seront renvoyé tous les messages sortants.
+# Attention : si vous utilisez plusieurs fai vous devez adapter ce paramètre pour chacuns d'eux
+# ou laisser par defaut la machine s'occuper elle même de la distribution du courrier (peut-être plus long).
+#
+relayhost = [smtp.fai.fr]
+
+# "defer_transports" permet de mettre en attente tout les messages utilisant
+# le transport SMTP, cad tous les messages "sortants" .
+#
+defer_transports = smtp
+
+# DEFAULT TRANSPORT
+################################################
+
+# default_transport definit le protocol par defaut utlisé pour délivrer les messages
+#
+default_transport = smtp
+
+# REECRITURE D'ADDRESSE 
+################################################
+
+# l'expéditeur inscrit dans l'envellope des messages émis de ce
+# serveur serra modifié pour apparaître comme venant du domaine
+# autredomaine.fr. Ceci permet de cacher au monde extérieur
+# le domaine fictif domaine-fantaisie.fr
+# On peut faire des réécriture par domaine ou par utilisateur
+#
+sender_canonical_maps = hash:/etc/postfix/send_canonical
+
+#recipient_canonical_maps = hash:/etc/postfix/reciv_canonical
+
+
+# ALIAS
+################################################
+
+# alias_maps et alias_database pointent sur les fichiers contenant les alias.
+# Ces alias permettent par exemple de faire la transformation prénom.nom ou p.nom en 
+# login unix valide.
+# Ils permettent aussi, dans une certaine mesure, de faire des (petites) listes de diffusion.
+#
+# En cas de changement la base (DB ou DBM) doit être reconstruite avec un "newaliases", 
+# éventuellement suivit d'un "postfix reload" pour éliminer le temps de prise en compte.
+#
+alias_maps = hash:/etc/postfix/aliases
+
+# alias_database definit le nom de la base d'alias qui sera reconstruit 
+# avec un "newaliases" ou "sendmail -bi".
+#
+alias_database = hash:/etc/postfix/aliases
+
+
+# DISTRIBUTION DES MESSAGES LOCAUX
+################################################
+
+# programme gerant la distribution locale du courrier.
+#
+#mailbox_command = /some/where/procmail -a "$EXTENSION"
+mailbox_command = /usr/bin/procmail
+
+# luser_relay redefinit une addresse de destination pour les destinataires
+# inconnus.
+#
+# luser_relay = $user@other.host
+# luser_relay = $local@other.host
+# luser_relay = admin+$local
+  
+  
+# JUNK MAIL CONTROLS
+################################################
+
+# "header_checks" definit des regles de filtrage quant au contenu des messages 
+# qui permettent par exemple de rejeter les messages de spameurs.
+#
+# The header_checks parameter restricts what may appear in message
+# headers. This requires that POSIX or PCRE regular expression support
+# is built-in. Specify "/^header-name: stuff you don not want/ REJECT"
+# in the pattern file. Patterns are case-insensitive by default.
+#
+#header_checks = regexp:/etc/postfix/filename
+#header_checks = pcre:/etc/postfix/filename
+
+# "relay_domains" definit avec quel domaine ou sous-domaine la machine
+# peut envoyer ou recevoir des messages.
+#
+# Par defaut , la machine n'accepte les messages que de machines 
+# appartenant à $mydestination ou figurant dans la liste des domaines
+# virtuel.
+#
+#relay_domains = $mydestination, $virtual_maps
+
+# "mynetworks" définit une liste d'addresses considérées comme locales (cf.Intranet)
+# Par défaut toutes les addresses attachées à la machine sont considérées
+# comme étant locales. (Voir les paramètres smtpd_recipient_restrictions et
+# permit_mynetworks dans la doc)
+# Il peut être interressant de ne pas activer l'interface externe,
+# afin de ne pas recevoir directement (sauf pour l'ETRN) de messages venants 
+# d'Internet.
+#
+#mynetworks = 10.0.0.0/8, 127.0.0.0/8
+#mynetworks = $config_directory/mynetworks
+
+
+# DISTRIBUTION PARALLELLE A UNE MEME DESTINATION 
+################################################
+
+# Nombre de messages délivrés simultanement en local :
+local_destination_concurrency_limit = 2
+
+# Nombre de messages délivrés simultanement aux autres :
+default_destination_concurrency_limit = 5
+
+
+# DEBUGAGE
+################################################
+
+# "debug_peer_level" définit le niveau de debugage lorsque l'on communique 
+# avec une machine listé dans debug_peer_list .
+#
+# debug_peer_level = 2
+
+# debug_peer_list = 127.0.0.1
+
+# The debugger_command specifies the external command that is executed
+# when a Postfix daemon program is run with the -D option.
+#
+# Use "command .. & sleep 5" so that the debugger can attach before
+# the process marches on. If you use an X-based debugger, be sure to
+# set up your XAUTHORITY environment variable before starting Postfix.
+
+debugger_command =
+	 PATH=/usr/bin:/usr/X11R6/bin
+	 xxgdb $daemon_directory/$process_name $process_id & sleep 5
+
+# AUTRES PARAMETRES
+################################################
+
+# Taille minimum d'espace sur le disque pour accepter les messages :
+queue_minfree = 31457280
+
+# Taille maximum des messages acceptés :
+message_size_limit = 2097152
+
+# Envoie une copie des messages d'erreur à postmaster :
+notify_classes = resource,software,bounce,delay,policy
+
+# Support Mysql
+virtual_alias_maps = mysql:/etc/postfix/mysql_virtual_alias_maps.cf
+virtual_gid_maps = static:5000
+virtual_mailbox_base = /home/vmail
+virtual_mailbox_domains = mysql:/etc/postfix/mysql_virtual_domains_maps.cf
+virtual_mailbox_limit = 51200000
+virtual_mailbox_maps = mysql:/etc/postfix/mysql_virtual_mailbox_maps.cf
+virtual_minimum_uid = 5000
+virtual_transport = virtual
+virtual_uid_maps = static:5000
+# Suport du relay
+#relay_domains = mysql:/etc/postfix/mysql_relay_domains_maps.cf
